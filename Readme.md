@@ -19,6 +19,13 @@
 * Underwater camera compatible with Raspberry Pi.
 * Waterproof lines
 
+### Requirement lib
+* 
+
+
+
+
+
 Compile trigger program: (signal)
 gcc -o signal signal.cpp -l wiringPi
 

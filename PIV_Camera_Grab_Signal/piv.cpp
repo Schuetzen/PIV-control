@@ -1,6 +1,9 @@
 /*
-    Forhead
+C++ program that captures images from a camera and saves them to disk. 
+The program uses the Pylon API to interact with the camera and the WiringPi library to control a laser and camera signal.
+The program also reads configuration values from a file named config.ini using the readConfigFile function.
 */
+
 // Include necessary headers (to use Pylon API)
 #include <pylon/PylonIncludes.h>
 #include <pylon/ParameterIncludes.h>
@@ -65,10 +68,15 @@ std::unordered_map<std::string, std::string> readConfigFile() {
     return configValues;
 }
 
-// Signal
-/*
 
-*/
+/**
+ * This function generates a signal for a PIV camera to capture two images with a certain time delay between them.
+ * @param arg A pointer to an integer array containing the following parameters:
+ *            - exposure: an integer representing the exposure time of the camera in milliseconds.
+ *            - dt: an integer representing the time delay between two consecutive image captures in milliseconds.
+ *            - freq: an integer representing the frequency of image captures in Hz.
+ * @return A null pointer.
+ */
 void* Signal(void* arg){
     // params
     int* params = (int*) arg;
@@ -115,11 +123,20 @@ void* Signal(void* arg){
     }
     return nullptr;
 }
-    // comments: The problem now is when I put the signal as a function in piv programm, it cannot stop
-    // Actually, you need run signal and grab the figures in the same time. We need to redesgin logic.
-    // Or maybe we can use two threads. I'm trying to figure this out.
-    // BTW I have fixed the reading config function.
 
+
+/**
+ * This function grabs images from a Basler camera using Pylon API and saves them as TIFF files.
+ * 
+ * @param arg An integer array containing the following parameters in order:
+ *            - exposure: the exposure time in milliseconds
+ *            - dur: the duration of the image acquisition in seconds
+ *            - freq: the frequency of image acquisition in Hz
+ *            - height: the height of the camera image in pixels
+ *            - width: the width of the camera image in pixels
+ * 
+ * @return void* A null pointer indicating successful completion of the function.
+ */
 void* pivGrab(void* arg){
     // The exit code of the sample application.
     int exitCode = 0;
@@ -129,7 +146,7 @@ void* pivGrab(void* arg){
     int exposure = params[0];
     int dur = params[1];
     int freq = params[2];
-    int hight = params[3];
+    int height = params[3];
     int width = params[4];
     // Before using any pylon methods, the pylon runtime must be initialized.
     PylonInitialize();
@@ -159,8 +176,8 @@ void* pivGrab(void* arg){
     // camera.TriggerSource.SetValue("Line3");
 
     // Set the height and width of the camera image
-    camera.Height.SetValue(400);
-    camera.Width.SetValue(1000);
+    camera.Height.SetValue(height);
+    camera.Width.SetValue(width);
 
     // Center the image in the camera's field of view
     camera.CenterX.SetValue(true);

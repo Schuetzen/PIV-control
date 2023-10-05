@@ -1,9 +1,12 @@
+/*
+    Forhead
+*/
 // Include necessary headers (to use Pylon API)
 #include <pylon/PylonIncludes.h>
 #include <pylon/ParameterIncludes.h>
 #include <pylon/BaslerUniversalInstantCamera.h>
 
-// Include WiringPi library!
+// Include WiringPi library! -> for signal
 #include <wiringPi.h>
 
 // Include necessary headers
@@ -17,40 +20,25 @@
 #include <cstring>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <string>
 // Include for config read
 #include <fstream>
 #include <unordered_map>
 
-#include <thread>
-
+// Include for thread
+#include <pthread.h>
 
 // Use the Pylon namespace and the standard namespace
 using namespace Pylon;
 using namespace std;
 
-// Signal headfile
-
-
-//wiringPi pin 0 = BCM GPIO pin 17 = physical pin 11
-#define cameraPin 0    
-// wiringPi pin 2 = BCM GPIO pin 27 = physical pin 13 
-#define laserPin 2     
-
-// verify the maximal time interval allowed. 50Hz->20ms
-// const int dt = 10;  
-
-const int flash = 1;
-const int freq = 10;
-// 10 ms of camera exposure time
-//const int exposure = 7; 
-// int exposure;
 
 // Read config File
 std::unordered_map<std::string, std::string> readConfigFile() {
     std::unordered_map<std::string, std::string> configValues;
 
     // open config.ini
-    std::ifstream configFile("./config.ini");
+    std::ifstream configFile("./Sample/config.ini");
     std::string line;
 
     if (configFile.is_open()) {
@@ -77,16 +65,39 @@ std::unordered_map<std::string, std::string> readConfigFile() {
     return configValues;
 }
 
-// open signal
-int Signal(int exposure, int dt){
+// Signal
+/*
+
+*/
+void* Signal(void* arg){
+    // params
+    int* params = (int*) arg;
+    int exposure = params[0];
+    int dt = params[1];
+    int freq = params[2];
+
+    // verify the maximal time interval allowed. 50Hz->20ms
+    // const int dt = 10;  
+
+    int flash = 1;
+    // int freq = 10;
+    // 10 ms of camera exposure time
+    //const int exposure = 7; 
+    // int exposure;
+
     // Setup stuff:
     wiringPiSetup();
+
+    //wiringPi pin 0 = BCM GPIO pin 17 = physical pin 11
+    int cameraPin = 0;    
+    // wiringPi pin 2 = BCM GPIO pin 27 = physical pin 13 
+    int laserPin = 2;    
 
     pinMode(cameraPin, OUTPUT);     // Set camera signal
     pinMode(laserPin, OUTPUT);
     
     std::cout << "Signal is running!\n";
-    while(1) {
+    while(true) {
         // turn on laser
         digitalWrite(laserPin, 1);
         // turn on camera for the first image
@@ -102,22 +113,30 @@ int Signal(int exposure, int dt){
         digitalWrite(laserPin, 0);
         delay(1000/freq-flash-dt-exposure); // wait until the next pair
     }
-    return 0;
+    return nullptr;
 }
     // comments: The problem now is when I put the signal as a function in piv programm, it cannot stop
     // Actually, you need run signal and grab the figures in the same time. We need to redesgin logic.
     // Or maybe we can use two threads. I'm trying to figure this out.
     // BTW I have fixed the reading config function.
 
-int pivGrab(void){
+void* pivGrab(void* arg){
     // The exit code of the sample application.
     int exitCode = 0;
 
+    // params
+    int* params = (int*) arg;
+    int exposure = params[0];
+    int dur = params[1];
+    int freq = params[2];
+    int hight = params[3];
+    int width = params[4];
     // Before using any pylon methods, the pylon runtime must be initialized.
     PylonInitialize();
 
-    // Set the number of images to save
-    int num_to_save = 200;
+    // Set the number of images to save 
+    // duration mutiple frequency mutiple two, two picture
+    int num_to_save = dur*freq*2;
 
     // Initialize Pylon
     Pylon::PylonAutoInitTerm autoInitTerm;
@@ -157,11 +176,12 @@ int pivGrab(void){
     // Set the exposure time to 7 ms
     // the max exposure time must be smaller than 20 ms (because of 20 ms time interval for PIV)
 
-    camera.ExposureTimeAbs.SetValue(7000);
-    cout << "exposure time = " << camera.ExposureTimeAbs.GetValue()/1000 << " ms" << endl;
-    cout << "Width is " << camera.Width.GetValue() << endl;
-    cout << "Height is " << camera.Height.GetValue() << endl;
-    cout << "Trigger mode is  " << camera.TriggerMode.GetValue() << endl;
+    camera.ExposureTimeAbs.SetValue(exposure*1000);
+    std::cout << "exposure time = " << camera.ExposureTimeAbs.GetValue()/1000 << " ms" << std::endl;
+    std::cout << "Width is " << camera.Width.GetValue() << std::endl;
+    std::cout << "Height is " << camera.Height.GetValue() << std::endl;
+    std::cout << "Trigger mode is  " << camera.TriggerMode.GetValue() << std::endl;
+
     // cout << "Trigger source is " << camera.TriggerSource.GetValue() << endl;
 
     auto t = std::time(nullptr);
@@ -191,7 +211,7 @@ int pivGrab(void){
             }
             else
                 {
-                    cout << "Error"<< endl;
+                    std::cout << "Error"<< std::endl;
 
                 }
         
@@ -200,9 +220,11 @@ int pivGrab(void){
     camera.Close();
 
     // Return 0 to indicate successful completion
-    return 0;
+    return nullptr;
 
 }
+
+
 
 
 // Main function
@@ -210,7 +232,8 @@ int main(int argc, char* argv[])
 {
     // Before task -> read config.ini and make sure the signal has open
     std::unordered_map<std::string, std::string> configValues = readConfigFile();
-
+    
+    /*
     // GetValue exposure
     if (configValues.count("exposure_time")) {
         int exposure = std::stoi(configValues["exposure_time"]);
@@ -226,17 +249,33 @@ int main(int argc, char* argv[])
     } else {
         std::cerr << "dt not found in config.ini" << std::endl;
     }
+    */
 
-    int exposure = std::stoi(configValues["exposure_time"]);
-    int dt = std::stoi(configValues["dt"]);
+    int exposure = std::stoi(configValues["exposure_time_in_ms"]);
+    int dt = std::stoi(configValues["dt_in_ms"]);
+    int freq = std::stoi(configValues["Frequency"]);
+    int dur = std::stoi(configValues["Duration_in_sec"]);
+    int hight = std::stoi(configValues["Height"]);
+    int width = std::stoi(configValues["Width"]);
 
-    // Signal(exposure, dt);
 
-    std::thread threadA(Signal(exposure, dt));
-    std::thread threadB(pivGrab());
+    // Create two threads, one for signal, one for grab, make sure they are running at the same time
+    pthread_t threadA, threadB;
 
-    threadA.join();
-    threadB.join();
+    // Create new threads;
+    int params_signal[3] = {exposure, dt, freq};
+    int params_piv[5] = {exposure, dur, freq, hight, width};
+
+    pthread_create(&threadA, nullptr, Signal, (void*) params_signal);
+    
+    pthread_create(&threadB, nullptr, pivGrab, (void*) params_piv);
+
+    // std::thread threadA(Signal(exposure, dt));
+    // std::thread threadB(pivGrab());
+
+    // wait till thread end
+    pthread_join(threadA, nullptr);
+    pthread_join(threadB, nullptr);
 
     return 0;
 }

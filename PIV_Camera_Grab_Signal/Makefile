@@ -4,7 +4,7 @@
 # The program to build
 NAME       := piv
 
-LIBS = -lwiringPi
+LIBS = -lwiringPi -pthread
 
 
 # Installation directories for pylon
@@ -23,7 +23,7 @@ LDLIBS     := $(shell $(PYLON_ROOT)/bin/pylon-config --libs)
 all: $(NAME)
 
 $(NAME): $(NAME).o
-	$(LD) $(LDFLAGS) -o $@ $^ $(LDLIBS) $(LIBS)
+	$(LD) $(LDFLAGS) -o $@ $^ $(LDLIBS) $(LIBS) $(LIBS)
 
 $(NAME).o: $(NAME).cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<

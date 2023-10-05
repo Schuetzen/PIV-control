@@ -41,7 +41,7 @@ std::unordered_map<std::string, std::string> readConfigFile() {
     std::unordered_map<std::string, std::string> configValues;
 
     // open config.ini
-    std::ifstream configFile("./Sample/config.ini");
+    std::ifstream configFile("./config.ini");
     std::string line;
 
     if (configFile.is_open()) {
@@ -281,6 +281,7 @@ int main(int argc, char* argv[])
 
     // Create new threads;
     int params_signal[3] = {exposure, dt, freq};
+    
     int params_piv[5] = {exposure, dur, freq, hight, width};
 
     pthread_create(&threadA, nullptr, Signal, (void*) params_signal);

@@ -24,8 +24,6 @@ The program also reads configuration values from a file named config.ini using t
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <string>
-#include <unistd.h>
-
 // Include for config read
 #include <fstream>
 #include <unordered_map>
@@ -83,8 +81,9 @@ void* Signal(void* arg){
     // params
     int* params = (int*) arg;
     int exposure = params[0];
-    int dt = params[1];
-    int freq = params[2];
+    int dur = params[1];
+    int dt = params[2];
+    int freq = params[3];
 
     // verify the maximal time interval allowed. 50Hz->20ms
     // const int dt = 10;  
@@ -107,7 +106,18 @@ void* Signal(void* arg){
     pinMode(laserPin, OUTPUT);
     
     std::cout << "Signal is running!\n";
+
+    // Get the start time of the loop
+    auto start_time = std::chrono::steady_clock::now();
+
     while(true) {
+        // Check if dur seconds have passed
+        auto current_time = std::chrono::steady_clock::now();
+        auto elapsed_time = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count();
+        if (elapsed_time >= dur + 1) {
+            break;
+        }
+
         // turn on laser
         digitalWrite(laserPin, 1);
         // turn on camera for the first image
@@ -150,7 +160,6 @@ void* pivGrab(void* arg){
     int freq = params[2];
     int height = params[3];
     int width = params[4];
-
     // Before using any pylon methods, the pylon runtime must be initialized.
     PylonInitialize();
     std::cout<<"Pylon Cameara initialized successfully."<<std::endl;
@@ -164,16 +173,16 @@ void* pivGrab(void* arg){
 
     // Create a device info object and set the device class to a camera
     Pylon::CDeviceInfo info;
+    std::cout<<"Camera Status:" <<std::endl;
 
-    std::cout<<"Waiting for Camera"<<std::endl;
-
-    // sleep(5);    
 
     // Create an instant camera object and open it
     CBaslerUniversalInstantCamera camera( CTlFactory::GetInstance().CreateFirstDevice(info) );
 
 
     camera.Open();
+    std::cout<<"Pylon Cameara opened successfully."<<std::endl;
+
  
     // Get the camera control object.
     // GenApi::INodeMap& nodemap = camera.GetNodeMap();
@@ -234,6 +243,7 @@ void* pivGrab(void* arg){
                 filename << "image" << i << ".tif";
                 image.Save(ImageFileFormat_Tiff, (mydir + "/" + filename.str()).c_str());
                 i++;
+                
             }
             else
                 {
@@ -244,6 +254,7 @@ void* pivGrab(void* arg){
     }
 
     camera.Close();
+    std::cout<<"Pylon Cameara closed successfully."<<std::endl;
 
     // Return 0 to indicate successful completion
     return nullptr;
@@ -259,7 +270,7 @@ int main(int argc, char* argv[])
     // Before task -> read config.ini and make sure the signal has open
     std::unordered_map<std::string, std::string> configValues = readConfigFile();
     std::cout<<"Read config file"<<std::endl;
-    
+
     /*
     // GetValue exposure
     if (configValues.count("exposure_time")) {
@@ -290,14 +301,12 @@ int main(int argc, char* argv[])
     pthread_t threadA, threadB;
 
     // Create new threads;
-    int params_signal[3] = {exposure, dt, freq};
+    int params_signal[4] = {exposure, dur, dt, freq};
     
     int params_piv[5] = {exposure, dur, freq, height, width};
 
     pthread_create(&threadA, nullptr, Signal, (void*) params_signal);
     
-    std::cout<<"step 1"<<std::endl;
-    // sleep(3);
     pthread_create(&threadB, nullptr, pivGrab, (void*) params_piv);
 
     // std::thread threadA(Signal(exposure, dt));

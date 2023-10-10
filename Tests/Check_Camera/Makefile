@@ -2,7 +2,7 @@
 .PHONY: all clean
 
 # The program to build
-NAME       := piv
+NAME       := camera_status
 
 LIBS = -lwiringPi -pthread
 

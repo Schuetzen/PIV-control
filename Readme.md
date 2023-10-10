@@ -1,8 +1,8 @@
-# Underwater Laser and Camera Control Program
+# Underwater Imaging System project
 
 
 ## Contents
-* ⭐ [Features](##Features)
+* ⭐ [Features](##feature)
 * ⭕ [Requirements](##Requirements)
 * 👉 [Quick Started](##QuickStarted)
 
@@ -11,55 +11,73 @@
 * Control the laser module for underwater visibility enhancement.
 * Interface with the camera for PIV.
 * Customize settings for different underwater conditions.
-* Easy integration with Raspberry Pi.
+* Use **"make"** commend to build you own project, this file should be found in each programm's folder.
+* All variables car be edited in **"config.ini"** file in the same layer of programm.
+* After Camera Captured pictures, the laser should be close and delay for 1s.
+* The tests fold are used for special situation, and check for hardware's status.
+
+Concept by @[mu-bwang](https://github.com/mu-bwang) 👩🏻‍🔬 | Built with ❤️ by @[Schutzen](https://github.com/Schuetzen)
 
 ## Requirements
 * Raspberry Pi with Raspbian OS.
 * Laser module compatible with Raspberry Pi GPIO.
 * Underwater camera compatible with Raspberry Pi.
 * Waterproof lines
+### ⚠️ Hardware Check ⚠️
+* Make sure connection **connects well.**
 
-### Requirement lib
+* Power should at least higher than **18 V.**
+ 
+### 🔗 Requirement library
 * 
-
-
-
-
-
-Compile trigger program: (signal)
-gcc -o signal signal.cpp -l wiringPi
-
-#####################################
-
-To enable auto run, open bashrc file using:
-
----
-nano ~/.bashrc
----
-
-uncomment the following commands:
-
-cd Desktop/cam_python 
-sleep 10
-./signal &
-python3 piv.py &
-## Open the Laser
-
-```
-sudo screen /dev/nACM0
-```
-
-## PIV Program
-g++ -o piv piv.cpp -l wiringPi
-
-## Shut off signal
-g++ -o shut_off_signal shut_off_signal.cpp -l wiringPi
 
 ## Quick Started
 
+### 1. turn on the laser, run bash commands - Trggier on
+
+```
+relay on 0
+
+```
+ **How to Turn on it manually?**
+
+```bash
+sudo screen /dev/nACM0
+```
+
+### 2. camera set up 
+Each time when connect with camera, it should be initialized first.
+
 ## Configuration
 
+the config.ini sample can be written as:
+**Before you edit the config file, make sure the parameter's name are correct.**
+
+```ini
+; Sample Test Case
+exposure_time_in_ms = 7
+dt_in_ms = 10
+Frequency = 10
+Duration_in_sec = 20
+Height = 400
+Width = 1000
+
+; The following parameters are used to set the camera's parameters.
+; The parameters are set using the following formula:
+; num_cameras = Frequency * Duration_in_sec * 2
+
+```
+
+## Errors Guild
+Here are the problems happend normally.
+
+*  **The laser's light is low**
+    Check the power first
+
+
+
 ## Contributing
+
 If you'd like to contribute to this project, please follow these steps:
 
 1. Fork the repository.

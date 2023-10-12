@@ -108,7 +108,16 @@ void* Signal(void* arg){
     pinMode(laserPin, OUTPUT);
     
     std::cout << "Signal is running!\n";
+    auto start_time = std::chrono::steady_clock::now();
     while(true) {
+
+        // exit loop after dur seconds
+        auto current_time = std::chrono::steady_clock::now();
+        auto elapsed_time = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count();
+        if (elapsed_time >= dur) {
+            break;
+        }
+        
         // turn on laser
         digitalWrite(laserPin, 1);
         // turn on camera for the first image
@@ -225,23 +234,20 @@ void* pivGrab(void* arg){
     {
         CGrabResultPtr ptrGrabResult;
         // try to get the image
-        
-            camera.RetrieveResult(2000, ptrGrabResult, TimeoutHandling_ThrowException);
-            if (ptrGrabResult->GrabSucceeded())
-            {
-              CPylonImage image;
-              image.AttachGrabResultBuffer(ptrGrabResult);
-              std::ostringstream filename;
-                filename << "image" << i << ".tif";
-                image.Save(ImageFileFormat_Tiff, (mydir + "/" + filename.str()).c_str());
-                i++;
-            }
-            else
-                {
-                    std::cout << "Error"<< std::endl;
-
-                }
-        
+        camera.RetrieveResult(2000, ptrGrabResult, TimeoutHandling_ThrowException);
+        if (ptrGrabResult->GrabSucceeded())
+        {
+            CPylonImage image;
+            image.AttachGrabResultBuffer(ptrGrabResult);
+            std::ostringstream filename;
+            filename << "image" << std::setfill('0') << std::setw(7) << i << ".tif";
+            image.Save(ImageFileFormat_Tiff, (mydir + "/" + filename.str()).c_str());
+            i++;
+        }
+        else
+        {
+            std::cout << "Error" << std::endl;
+        }
     }
 
     camera.Close();
@@ -279,6 +285,7 @@ int main(int argc, char* argv[])
     }
     */
 
+    // GetValue 
     int exposure = std::stoi(configValues["exposure_time_in_ms"]);
     int dt = std::stoi(configValues["dt_in_ms"]);
     int freq = std::stoi(configValues["Frequency"]);
@@ -295,11 +302,15 @@ int main(int argc, char* argv[])
     
     int params_piv[5] = {exposure, dur, freq, height, width};
 
+    std::cout<<"start signal"<<std::endl;
+
     pthread_create(&threadA, nullptr, Signal, (void*) params_signal);
-    
-    std::cout<<"step 1"<<std::endl;
-    // sleep(3);
+
+    std::cout<<"start camera"<<std::endl;
+
     pthread_create(&threadB, nullptr, pivGrab, (void*) params_piv);
+    
+    
 
     // std::thread threadA(Signal(exposure, dt));
     // std::thread threadB(pivGrab());

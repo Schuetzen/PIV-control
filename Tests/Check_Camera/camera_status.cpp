@@ -261,8 +261,47 @@ void* pivGrab(void* arg){
 
 }
 
+// Check the camera connection status
+void checkCameraConnectionStatus()
+{
+    Pylon::PylonAutoInitTerm autoInitTerm;
+    Pylon::DeviceInfoList_t devices;
+    Pylon::CTlFactory& tlFactory = Pylon::CTlFactory::GetInstance();
+    tlFactory.EnumerateDevices(devices);
 
+    if (devices.empty())
+    {
+        std::cout << "No camera connected." << std::endl;
+    }
+    else
+    {
+        std::cout << "Number of cameras connected: " << devices.size() << std::endl;
+        for (size_t i = 0; i < devices.size(); ++i)
+        {
+            std::cout << "Camera " << i << " information:" << std::endl;
+            std::cout << "  DeviceClass: " << devices[i].GetDeviceClass() << std::endl;
+            std::cout << "  DeviceFactory: " << devices[i].GetDeviceFactory() << std::endl;
+            std::cout << "  DeviceVersion: " << devices[i].GetDeviceVersion() << std::endl;
+            std::cout << "  FullName: " << devices[i].GetFullName() << std::endl;
+            std::cout << "  FriendlyName: " << devices[i].GetFriendlyName() << std::endl;
+            std::cout << "  SerialNumber: " << devices[i].GetSerialNumber() << std::endl;
+            std::cout << "  UserDefinedName: " << devices[i].GetUserDefinedName() << std::endl;
+            std::cout << "  VendorName: " << devices[i].GetVendorName() << std::endl;
+            std::cout << "  DeviceID: " << devices[i].GetDeviceID() << std::endl;
+            std::cout << "  ModelName: " << devices[i].GetModelName() << std::endl;
+            std::cout << "  NodeMapPath: " << devices[i].GetNodeMapPath() << std::endl;
+        }
+    }
+}
 
+// Print config values
+void printConfigValues(const std::unordered_map<std::string, std::string>& configValues)
+{
+    for (const auto& [key, value] : configValues)
+    {
+        std::cout << key << ": " << value << std::endl;
+    }
+}
 
 // Main function
 int main(int argc, char* argv[])
@@ -289,32 +328,16 @@ int main(int argc, char* argv[])
     }
     */
 
-    int exposure = std::stoi(configValues["exposure_time_in_ms"]);
-    int dt = std::stoi(configValues["dt_in_ms"]);
-    int freq = std::stoi(configValues["Frequency"]);
-    int dur = std::stoi(configValues["Duration_in_sec"]);
-    int height = std::stoi(configValues["Height"]);
-    int width = std::stoi(configValues["Width"]);
+    // int exposure = std::stoi(configValues["exposure_time_in_ms"]);
+    // int dt = std::stoi(configValues["dt_in_ms"]);
+    // int freq = std::stoi(configValues["Frequency"]);
+    // int dur = std::stoi(configValues["Duration_in_sec"]);
+    // int height = std::stoi(configValues["Height"]);
+    // int width = std::stoi(configValues["Width"]);
 
 
-    // Create two threads, one for signal, one for grab, make sure they are running at the same time
-    pthread_t threadA, threadB;
-
-    // Create new threads;
-    int params_signal[4] = {exposure, dur, dt, freq};
-    
-    int params_piv[5] = {exposure, dur, freq, height, width};
-
-    pthread_create(&threadA, nullptr, Signal, (void*) params_signal);
-    
-    pthread_create(&threadB, nullptr, pivGrab, (void*) params_piv);
-
-    // std::thread threadA(Signal(exposure, dt));
-    // std::thread threadB(pivGrab());
-
-    // wait till thread end
-    pthread_join(threadA, nullptr);
-    pthread_join(threadB, nullptr);
+    checkCameraConnectionStatus();
 
     return 0;
 }
+

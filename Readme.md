@@ -20,9 +20,10 @@
 * Customize settings for different underwater conditions.
 * Use **"make"** commend to build you own project, this file should be found in each programm's folder.
 * All variables car be edited in **"config.ini"** file in the same layer of programm.
-* After Camera Captured pictures, the laser should be close and delay for 1s.
+* After Camera Captured pictures, the laser should be close and delay for 1s. - check
 * The tests fold are used for special situation, and check for hardware's status.
-* Check local time
+* All `.tif` files and its folder will be save in the **data** folder, other object file can be save in the **build** folder.
+* Check local time - Not yet
 
 Concept by @[mu-bwang](https://github.com/mu-bwang) 👩🏻‍🔬 | Built with ❤️ by @[Schutzen](https://github.com/Schuetzen)
 

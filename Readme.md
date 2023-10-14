@@ -22,6 +22,7 @@
 * All variables car be edited in **"config.ini"** file in the same layer of programm.
 * After Camera Captured pictures, the laser should be close and delay for 1s.
 * The tests fold are used for special situation, and check for hardware's status.
+* Check local time
 
 Concept by @[mu-bwang](https://github.com/mu-bwang) 👩🏻‍🔬 | Built with ❤️ by @[Schutzen](https://github.com/Schuetzen)
 
@@ -108,12 +109,28 @@ Each time when connect with camera, it should be initialized first.
 cd ./piv_folder
 
 # build your cpp file
-build
+make
 
 # run 
 ./piv
 
 ```
+
+### 3. Other commands
+
+Clean the data folder
+```bash
+bash ./sample/clear_data.sh
+
+```
+
+Pack the data folder for download
+```bash
+
+bash ./sample/pack_data.sh
+
+```
+
 
 ## Configuration
 
@@ -142,6 +159,13 @@ Here are the problems happend normally.
 *  **The laser's light is low**
     Check the power first
 
+
+
+* **Error: Timeout Exception**
+
+    `terminate called after throwing an instance of 'GenICam_3_1_Basler_pylon::TimeoutException'
+Aborted` 
+    **This reason might caused by the signal time, if the signal loop break too fast, it will have no trigger signal for the camera.**
 
 
 ## Contributing

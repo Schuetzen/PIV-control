@@ -16,22 +16,23 @@ int main(void)
     wiringPiSetup();
     pinMode(camera, OUTPUT);     // Set camera signal
     pinMode(laser, OUTPUT);
-    std::cout << "Signal is running! Press CTRL+C to quit...\n";
-    while(1) {
+
         // turn on laser
-        digitalWrite(laser, 1);
+        // digitalWrite(laser, 1);
         // turn on camera for the first image
-        digitalWrite(camera, 1); // Rising edge 
-        delay(flash); // g
-        digitalWrite(camera, 0); // Falling edge
-        delay(dt-flash); // wait delt_t for the second signal
+        // digitalWrite(camera, 1); // Rising edge 
+        // delay(flash); // g
+        // digitalWrite(camera, 0); // Falling edge
+        // delay(dt-flash); // wait delt_t for the second signal
         
         // turn on camera for the second image
-        digitalWrite(camera, 1); // Rising edge 
-        delay(flash+exposure); // 
-        digitalWrite(camera, 0);
-        digitalWrite(laser, 0);
-        delay(1000/freq-flash-dt-exposure); // wait until the next pair
-    }
+        // digitalWrite(camera, 1); // Rising edge 
+        // delay(flash+exposure); // 
+        // digitalWrite(camera, 0);
+    digitalWrite(laser, 0);
+        // delay(1000/freq-flash-dt-exposure); // wait until the next pair
+    
+    std::cout << "Signal is Off!\n";
+
     return 0;
 }

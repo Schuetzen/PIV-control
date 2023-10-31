@@ -4,14 +4,19 @@
   <img src="assets/Raspberry.jpg" alt="Raspberry Pi" width='200'/>
 </p>
 
+
 ***This program is an Underwater Imaging System project designed to address various challenges in capturing clear images in underwater environments.***
+
+`last_edited_time`: 10252023
 
 
 ## Contents
 * ⭐ [Features](#features)
 * ⭕ [Requirements](#requirements)
 * 👉 [Quick Started](#quick-started)
-* 🤬[Trouble Shooting](#troubleshooting)
+* 🤬 [Trouble Shooting](#troubleshooting)
+* 🤖 [Techlogical Configuration](#backup-tech-configuration)![Alt text](image.png)
+
 
 
 ## Features
@@ -36,7 +41,9 @@ Concept by @[mu-bwang](https://github.com/mu-bwang) 👩🏻‍🔬 | Built with
 ### ⚠️ Hardware Check ⚠️
 * Make sure connection **connects well.**
 
-* Power should at least higher than **18 V.**
+* Power should at least higher than **18 V.** (In order to make laser run)
+
+* More Information please check the [Hardware Configuration](#hardware-configuration)
  
 ### 🔗 Requirement library
 
@@ -152,7 +159,6 @@ Width = 1000
 ; num_cameras = Frequency * Duration_in_sec * 2
 
 ```
-
 ## Troubleshooting
 
 Here are the problems happend normally.
@@ -167,6 +173,37 @@ Here are the problems happend normally.
     `terminate called after throwing an instance of 'GenICam_3_1_Basler_pylon::TimeoutException'
 Aborted` 
     **This reason might caused by the signal time, if the signal loop break too fast, it will have no trigger signal for the camera.**
+
+
+## Backup Tech-Configuration
+
+### Hardware Configuration
+The following section delineates the hardware configuration for the Raspberry Pi 4 setup, focusing on the GPIO pin assignments.
+
+<p align="center">
+  <img src="assets/Raspberry-Pi-GPIO.png" alt="Raspberry GPIO" width='400'/>
+</p>
+
+
+*GPIO Pin Assignments*
+
+Utilizing the WiringPi library, specific pins are designated for various components in this setup:
+
+* Laser and Camera Connection:
+
+
+* Real-Time Clock (RTC) Module Connection:
+
+
+
+### Software Architecture
+
+This section elucidates the data flow among different directories and outlines the purpose each directory serves in this system.\
+
+* `data` Directory:
+* `assests`
+
+## Reference
 
 
 ## Contributing

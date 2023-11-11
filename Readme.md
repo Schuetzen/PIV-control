@@ -128,46 +128,54 @@ This code is a C++ program that leverages various libraries and headers to facil
 
 ## Quick Started
 
-### 1. turn on the laser, run bash commands - Trggier on
-
-```bash
-relay on 0
-
-```
- **How to Turn on it manually?**
-
-```bash
-sudo screen /dev/nACM0
-```
-
-### 2. Camera Setup 
+### 1. Capture pcitures 
 Each time when connect with camera, it should be initialized first.
 
 ```bash
-# sample
-cd ./piv_folder
+# go to the main code
+cd ./cam_cpp/build
 
-# build your cpp file
-make
-
-# run 
+# run codes
 ./piv
-
 ```
 
+### 2. Edit source code
+
+If you need to edit the script,
+```bash
+cd ./cam_cpp/source
+```
+`piv.c` is the target source script.
+
+If you need to compile it, type
+```bash
+make
+```
+It will create the target obejct file and executable file in foler `build`
 ### 3. Other commands
+
+Trun on laser
+```bash
+cd ./cam_cpp/build
+./laser_on
+```
+
+Trun off laser
+```bash
+cd ./cam_cpp/build
+./laser_off
+```
 
 Clean the data folder
 ```bash
-bash ./sample/clear_data.sh
-
+cd ./cam_cpp
+bash ./commands/clean_data.sh
 ```
 
 Pack the data folder for download
 ```bash
-
-bash ./sample/pack_data.sh
-
+cd ./cam_cpp
+bash ./commands/pack_data.sh
 ```
 
 
@@ -179,12 +187,13 @@ the config.ini sample can be written as:
 ```ini
 ; Sample Test Case
 exposure_time_in_ms = 7
-dt_in_ms = 10
+dt_in_ms = 10 
 Frequency = 10
 Duration_in_sec = 20
 Height = 400
 Width = 1000
 
+; delta t should higher than 9
 ; The following parameters are used to set the camera's parameters.
 ; The parameters are set using the following formula:
 ; num_cameras = Frequency * Duration_in_sec * 2
@@ -267,3 +276,5 @@ If you'd like to contribute to this project, please follow these steps:
 4. Provide a detailed description of your changes.
 
 ## License
+
+BSD 3-clause "New" or "Revised" license	

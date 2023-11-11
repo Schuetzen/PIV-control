@@ -4,41 +4,43 @@ The program uses the Pylon API to interact with the camera and the WiringPi libr
 The program also reads configuration values from a file named config.ini using the readConfigFile function.
 */
 
-// Include necessary headers (to use Pylon API)
+// Include necessary headers for the Pylon API to interact with Basler cameras.
 #include <pylon/PylonIncludes.h>
 #include <pylon/ParameterIncludes.h>
 #include <pylon/BaslerUniversalInstantCamera.h>
 
-// Include WiringPi library! -> for signal
+// Include the WiringPi library for GPIO control on Raspberry Pi.
 #include <wiringPi.h>
 
-// Include necessary headers
-#include <iostream>
-#include <ctime>
-#include <chrono>
-#include <sstream>
-#include <iomanip>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <string>
-#include <unistd.h>
+// Standard C++ library headers for various functionalities.
+#include <iostream> // For input and output operations.
+#include <ctime>    // For time-related functions.
+#include <chrono>   // For high-resolution clock and timing operations.
+#include <sstream>  // For string stream operations, useful in formatting strings.
+#include <iomanip>  // For parametric manipulators, used to format output.
+#include <cstdio>   // For C-style input-output (e.g., printf).
+#include <cstdlib>  // For general-purpose functions such as system calls.
+#include <cstring>  // For string manipulation functions.
+#include <sys/stat.h> // For querying file system status.
+#include <sys/types.h> // For defining various data types used in system calls.
+#include <string>   // For using the string class.
+#include <unistd.h> // For POSIX operating system API.
+#include <fstream>  // For file stream operations (e.g., reading from files).
+#include <unordered_map> // For using hash tables (unordered maps).
+#include <pthread.h> // For using POSIX threads.
 
-// Include for config read
-#include <fstream>
-#include <unordered_map>
 
-// Include for thread
-#include <pthread.h>
-
-// Use the Pylon namespace and the standard namespace
+// Use the Pylon namespace to avoid prefixing Pylon functions with their namespace.
 using namespace Pylon;
+// Use the standard namespace to avoid prefixing standard functions with 'std::'.
 using namespace std;
 
+const int FLASH_DURATION = 1; // Duration of the flash signal in milliseconds
+const int RETRIEVE_TIMEOUT = 2000; // Timeout for camera image retrieval in milliseconds
 
-// Read config File
+
+
+// Function to read configuration values from a file named "config.ini".
 std::unordered_map<std::string, std::string> readConfigFile() {
     std::unordered_map<std::string, std::string> configValues;
 
@@ -71,6 +73,20 @@ std::unordered_map<std::string, std::string> readConfigFile() {
 }
 
 
+// Function to print the current time followed by a specific message.
+void PrintCurrentTimeAndMessage(string message) {
+    // Obtain the current time
+    time_t now = time(0);
+    // Convert it to tm struct
+    tm *ltm = localtime(&now);
+
+    // Output the time and the message
+    std::cout << ltm->tm_hour << ":";
+    std::cout << ltm->tm_min << " ";
+    std::cout << message << std::endl;
+}
+
+
 /**
  * This function generates a signal for a PIV camera to capture two images with a certain time delay between them.
  * @param arg A pointer to an integer array containing the following parameters:
@@ -87,10 +103,12 @@ void* Signal(void* arg){
     int freq = params[2];
     int dt = params[3];
     
+    int ext = dur / 10;
+
     // verify the maximal time interval allowed. 50Hz->20ms
     // const int dt = 10;  
 
-    int flash = 1;
+    int flash = FLASH_DURATION;
     // int freq = 10;
     // 10 ms of camera exposure time
     //const int exposure = 7; 
@@ -106,15 +124,15 @@ void* Signal(void* arg){
 
     pinMode(cameraPin, OUTPUT);     // Set camera signal
     pinMode(laserPin, OUTPUT);
-    
-    std::cout << "Signal is running!\n";
+
+    PrintCurrentTimeAndMessage("Laser is running!");    
     auto start_time = std::chrono::steady_clock::now();
     while(true) {
 
         // exit loop after dur seconds
         auto current_time = std::chrono::steady_clock::now();
         auto elapsed_time = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count();
-        if (elapsed_time >= dur) {
+        if (elapsed_time >= dur + ext) {
             break;
         }
         
@@ -160,10 +178,11 @@ void* pivGrab(void* arg){
     int freq = params[2];
     int height = params[3];
     int width = params[4];
+    int dt = params[5];
 
     // Before using any pylon methods, the pylon runtime must be initialized.
     PylonInitialize();
-    std::cout<<"Pylon Cameara initialized successfully."<<std::endl;
+    PrintCurrentTimeAndMessage("Pylon Cameara initialized successfully.");
 
     // Set the number of images to save 
     // duration mutiple frequency mutiple two, two picture
@@ -175,7 +194,7 @@ void* pivGrab(void* arg){
     // Create a device info object and set the device class to a camera
     Pylon::CDeviceInfo info;
 
-    std::cout<<"Waiting for Camera"<<std::endl;
+    PrintCurrentTimeAndMessage("Waiting for Camera");
 
     // sleep(5);    
 
@@ -184,7 +203,9 @@ void* pivGrab(void* arg){
 
 
     camera.Open();
- 
+    
+    PrintCurrentTimeAndMessage("Camera Opend Successfully");
+
     // Get the camera control object.
     // GenApi::INodeMap& nodemap = camera.GetNodeMap();
 
@@ -202,30 +223,40 @@ void* pivGrab(void* arg){
     camera.CenterX.SetValue(true);
     camera.CenterY.SetValue(true);
 
-    // Get the parameters for setting the image area of interest (Image AOI).
-/*
-    CIntegerParameter width( nodemap, "Width" );
-    CIntegerParameter height( nodemap, "Height" );
-    CIntegerParameter offsetX( nodemap, "OffsetX" );
-    CIntegerParameter offsetY( nodemap, "OffsetY" );
-*/
-    // Set the exposure time to 7 ms
-    // the max exposure time must be smaller than 20 ms (because of 20 ms time interval for PIV)
-
     camera.ExposureTimeAbs.SetValue(exposure*1000);
-    std::cout << "exposure time = " << camera.ExposureTimeAbs.GetValue()/1000 << " ms" << std::endl;
-    std::cout << "Width is " << camera.Width.GetValue() << std::endl;
-    std::cout << "Height is " << camera.Height.GetValue() << std::endl;
-    std::cout << "Trigger mode is  " << camera.TriggerMode.GetValue() << std::endl;
-
-    // cout << "Trigger source is " << camera.TriggerSource.GetValue() << endl;
 
     auto t = std::time(nullptr);
     auto tm = *std::localtime(&t);
     std::ostringstream oss;
-    oss << std::put_time(&tm, "%Y-%m-%d_%H-%M-%S");
+    oss << std::put_time(&tm, "%Y-%m-%d_%H-%M");
+
     auto mydir = oss.str();
-    mkdir(mydir.c_str(), 0777);
+
+    std::string dataDir = "../data/" + mydir;
+    // std::string dataDir = mydir;
+
+    mkdir(dataDir.c_str(), 0777);
+    PrintCurrentTimeAndMessage("Data saved in the " + dataDir);
+
+    // Open a log file in the same directory where the images will be saved
+    std::ofstream logFile(dataDir + "/Readme.txt");
+    if (!logFile.is_open()) {
+    std::cerr << "Failed to create log file" << std::endl;
+    return nullptr; // or handle the error as you see fit
+    }
+
+    // Redirect cout to log file
+    std::streambuf* coutbuf = std::cout.rdbuf(); //save old buf
+    std::cout.rdbuf(logFile.rdbuf()); //redirect std::cout to log.txt!
+
+    // save in the Readme file
+    std::cout << "Exposure time = " << camera.ExposureTimeAbs.GetValue()/1000 << " ms" << std::endl;
+    std::cout << "Delta t = " << dt << " ms"<< std::endl;
+    std::cout << "Duration time = " << dur << " s"<< std::endl;
+    std::cout << "Width = " << camera.Width.GetValue() << " pix"<< std::endl;
+    std::cout << "Height = " << camera.Height.GetValue() << " pix"<< std::endl;
+    std::cout << "Trigger mode is  " << camera.TriggerMode.GetValue() << std::endl;
+    std::cout << "Expected Picture number is " << num_to_save << std::endl;
 
     auto tic = std::chrono::high_resolution_clock::now();
     camera.StartGrabbing(num_to_save);
@@ -234,7 +265,9 @@ void* pivGrab(void* arg){
     {
         CGrabResultPtr ptrGrabResult;
         // try to get the image
-        camera.RetrieveResult(2000, ptrGrabResult, TimeoutHandling_ThrowException);
+        try
+        {
+            camera.RetrieveResult(RETRIEVE_TIMEOUT, ptrGrabResult, TimeoutHandling_ThrowException);
         if (ptrGrabResult->GrabSucceeded())
         {
             CPylonImage image;
@@ -242,49 +275,84 @@ void* pivGrab(void* arg){
             std::ostringstream filename;
             filename << "image" << std::setfill('0') << std::setw(7) << i << ".tif";
             // image.Save(ImageFileFormat_Tiff, (mydir + "/" + filename.str()).c_str());
-            image.Save(ImageFileFormat_Tiff, (mydir + "../data/" + filename.str()).c_str());
+            image.Save(ImageFileFormat_Tiff, (dataDir + "/" + filename.str()).c_str());
             i++;
         }
         else
         {
             std::cout << "Error" << std::endl;
         }
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << "Exception occurred: " << e.what() << std::endl;
+            return (void*)EXIT_FAILURE;
+        }
+        
+        
     }
 
     camera.Close();
+
+    PrintCurrentTimeAndMessage("Camera Closed Successfully");
+
+    // Redirect cout back to its original buffer
+    std::cout.rdbuf(coutbuf); //reset to standard output again
+
+    logFile.close();
 
     // Return 0 to indicate successful completion
     return nullptr;
 
 }
 
-
-
-
-// Main function
+// The main function where the program starts executing.
 int main(int argc, char* argv[])
 {
-    // Before task -> read config.ini and make sure the signal has open
-    std::unordered_map<std::string, std::string> configValues = readConfigFile();
-    std::cout<<"Read config file"<<std::endl;
-    
-    /*
-    // GetValue exposure
-    if (configValues.count("exposure_time")) {
-        int exposure = std::stoi(configValues["exposure_time"]);
-        std::cout << "Exposure Time: " << exposure << " seconds" << std::endl;
-    } else {
-        std::cerr << "Exposure Time not found in config.ini" << std::endl;
+    // Obtain the current time as a time_t object
+    time_t now = time(0);
+
+    // Convert it to local time
+    tm *ltm = localtime(&now);
+
+    PrintCurrentTimeAndMessage("Code is running, please wait ...");
+
+    // Create a timestamp string for the filename
+    std::ostringstream oss;
+    oss << "../logs/log_" << 1900 + ltm->tm_year << "-" 
+        << std::setfill('0') << std::setw(2) << 1 + ltm->tm_mon << "-" 
+        << std::setfill('0') << std::setw(2) << ltm->tm_mday << "_" 
+        << std::setfill('0') << std::setw(2) << ltm->tm_hour << "-" 
+        << std::setfill('0') << std::setw(2) << ltm->tm_min << "-" 
+        << std::setfill('0') << std::setw(2) << ltm->tm_sec << ".txt";
+    std::string logFileName = oss.str();
+
+    // Open a log file with the timestamped name
+    std::ofstream logFile(logFileName);
+    if (!logFile.is_open()) {
+        std::cerr << "Failed to create log file: " << logFileName << std::endl;
+        return 1; // Exit if cannot open log file
     }
 
-    // GetValue dt
-    if (configValues.count("dt")) {
-        int dt = std::stoi(configValues["dt"]);
-        std::cout << "dt: " << dt << " seconds" << std::endl;
-    } else {
-        std::cerr << "dt not found in config.ini" << std::endl;
-    }
-    */
+    // Redirect cout to log file
+    std::streambuf* coutbuf = std::cout.rdbuf(); // Save old buffer
+    std::cout.rdbuf(logFile.rdbuf()); // Redirect std::cout to the log file
+
+
+    // Print head
+    std::cout << "****************************************" << std::endl;
+    std::cout << "Log @ ";
+    // Output the time in MM:DD:hh:mm format
+    std::cout << std::setfill('0') << std::setw(2) << ltm->tm_mon + 1 << ":"; // Months are 0-11, so add 1
+    std::cout << std::setfill('0') << std::setw(2) << ltm->tm_mday << ":";
+    std::cout << std::setfill('0') << std::setw(2) << ltm->tm_hour << ":";
+    std::cout << std::setfill('0') << std::setw(2) << ltm->tm_min << std::endl;
+    std::cout << "****************************************" << std::endl;
+
+    // Before task -> read config.ini and make sure the signal has open
+    std::unordered_map<std::string, std::string> configValues = readConfigFile();
+
+    PrintCurrentTimeAndMessage("Reading config.ini");
 
     // GetValue 
     int exposure = std::stoi(configValues["exposure_time_in_ms"]);
@@ -294,6 +362,15 @@ int main(int argc, char* argv[])
     int height = std::stoi(configValues["Height"]);
     int width = std::stoi(configValues["Width"]);
 
+    // Print configuration values in a structured manner
+    std::cout << "******** Configuration Settings ********" << std::endl;
+    std::cout << "Delta Time (dt): " << dt << " ms" << std::endl;
+    std::cout << "Exposure Time: " << exposure << " ms" << std::endl;
+    std::cout << "Frequency: " << freq << " Hz" << std::endl; 
+    std::cout << "Duration: " << dur << " seconds" << std::endl;
+    std::cout << "Image Height: " << height << " pixels" << std::endl;
+    std::cout << "Image Width: " << width << " pixels" << std::endl;
+    std::cout << "***************************************" << std::endl;
 
     // Create two threads, one for signal, one for grab, make sure they are running at the same time
     pthread_t threadA, threadB;
@@ -301,20 +378,15 @@ int main(int argc, char* argv[])
     // Create new threads;
     int params_signal[4] = {exposure, dur, freq, dt};
     
-    int params_piv[5] = {exposure, dur, freq, height, width};
+    int params_piv[6] = {exposure, dur, freq, height, width, dt};
 
-    std::cout<<"start signal"<<std::endl;
+    PrintCurrentTimeAndMessage("Laser start");
 
     pthread_create(&threadA, nullptr, Signal, (void*) params_signal);
 
-    std::cout<<"start camera"<<std::endl;
+    PrintCurrentTimeAndMessage("Camera start");
 
     pthread_create(&threadB, nullptr, pivGrab, (void*) params_piv);
-    
-    
-
-    // std::thread threadA(Signal(exposure, dt));
-    // std::thread threadB(pivGrab());
 
     // wait till thread end
     pthread_join(threadA, nullptr);

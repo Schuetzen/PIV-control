@@ -9,8 +9,9 @@
 
 It captures images from the camera and saves them to disk, synchronized with the laser signal. The program is particularly useful for applications requiring precise timing between image captures and external events, such as in Particle Image Velocimetry (PIV) systems.
 
-`last_edited_time`: 11092023
+`last_edited_time`: `Nov. 15 2023`
 
+*More information on different versions, please refer releases notes.*
 
 ## Contents
 * ⭐ [Features](#features)
@@ -261,7 +262,6 @@ This section elucidates the data flow among different directories and outlines t
 * `source`: The main source files of the application are located here. It is the heart of the project, containing the primary logic, algorithms, and functionality.
     
 * `scripts`: Additional scripts related to camera control and other auxiliary functions can be found here. These are not the main executable scripts but support the application, often interfacing with external hardware or services.
-
 
 ## Contributing
 

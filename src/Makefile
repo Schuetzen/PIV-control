@@ -2,7 +2,7 @@
 .PHONY: all clean
 
 # The program to build
-NAME       := piv_model1
+NAME       := piv
 
 LIBS = -lwiringPi -pthread
 
@@ -18,16 +18,20 @@ LDFLAGS    := $(shell $(PYLON_ROOT)/bin/pylon-config --libs-rpath)
 LDLIBS     := $(shell $(PYLON_ROOT)/bin/pylon-config --libs)
 
 # Directories
-BUILD_DIR := ../../build
+OBJ_DIR    := ../build
+BIN_DIR    := ../bin
+
+# Object Files
+OBJ_FILES  := $(OBJ_DIR)/$(NAME).o
 
 # Rules for building
-all: $(BUILD_DIR)/$(NAME)
+all: $(BIN_DIR)/$(NAME)
 
-$(BUILD_DIR)/$(NAME): $(BUILD_DIR)/$(NAME).o
+$(BIN_DIR)/$(NAME): $(OBJ_FILES)
 	$(LD) $(LDFLAGS) -o $@ $^ $(LDLIBS) $(LIBS) $(LIBS)
 
-$(BUILD_DIR)/$(NAME).o: $(NAME).cpp
+$(OBJ_DIR)/$(NAME).o: $(NAME).cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 clean:
-	$(RM) $(BUILD_DIR)/$(NAME).o $(BUILD_DIR)/$(NAME)
+	$(RM) $(OBJ_FILES) $(BIN_DIR)/$(NAME)

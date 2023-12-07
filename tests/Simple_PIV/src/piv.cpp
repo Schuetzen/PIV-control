@@ -29,6 +29,8 @@ The program also reads configuration values from a file named config.ini using t
 #include <unordered_map> // For using hash tables (unordered maps).
 #include <pthread.h> // For using POSIX threads.
 
+#include <./UtilityFunctions.h>
+
 
 // Use the Pylon namespace to avoid prefixing Pylon functions with their namespace.
 using namespace Pylon;
@@ -37,54 +39,6 @@ using namespace std;
 
 const int FLASH_DURATION = 1; // Duration of the flash signal in milliseconds
 const int RETRIEVE_TIMEOUT = 2000; // Timeout for camera image retrieval in milliseconds
-
-
-
-// Function to read configuration values from a file named "config.ini".
-std::unordered_map<std::string, std::string> readConfigFile() {
-    std::unordered_map<std::string, std::string> configValues;
-
-    // open config.ini
-    std::ifstream configFile("./config.ini");
-    std::string line;
-
-    if (configFile.is_open()) {
-        while (std::getline(configFile, line)) { 
-            // Read by lines
-            size_t delimiterPos = line.find("=");
-
-            if (delimiterPos != std::string::npos) {
-                std::string key = line.substr(0, delimiterPos);
-                std::string value = line.substr(delimiterPos + 1);
-
-                key.erase(key.find_last_not_of(" \n\r\t") + 1);
-                value.erase(0, value.find_first_not_of(" \n\r\t"));
-
-                configValues[key] = value;
-            }
-        }
-        // Close File
-        configFile.close();
-    } else {
-        std::cerr << "Unable to open config.ini" << std::endl;
-    }
-
-    return configValues;
-}
-
-
-// Function to print the current time followed by a specific message.
-void PrintCurrentTimeAndMessage(string message) {
-    // Obtain the current time
-    time_t now = time(0);
-    // Convert it to tm struct
-    tm *ltm = localtime(&now);
-
-    // Output the time and the message
-    std::cout << ltm->tm_hour << ":";
-    std::cout << ltm->tm_min << " ";
-    std::cout << message << std::endl;
-}
 
 
 /**
@@ -102,10 +56,17 @@ void* Signal(void* arg){
     int dur = params[1];
     int freq = params[2];
     int dt = params[3];
-    int laser_on = params[4];
-    int ext = params[5]; 
+    
+    int ext = dur / 10;
 
-    int flash = FLASH_DURATION; // Duration of the flash signal in milliseconds
+    // verify the maximal time interval allowed. 50Hz->20ms
+    // const int dt = 10;  
+
+    int flash = FLASH_DURATION;
+    // int freq = 10;
+    // 10 ms of camera exposure time
+    //const int exposure = 7; 
+    // int exposure;
 
     // Setup stuff:
     wiringPiSetup();
@@ -118,10 +79,6 @@ void* Signal(void* arg){
     pinMode(cameraPin, OUTPUT);     // Set camera signal
     pinMode(laserPin, OUTPUT);
 
-    float laser_flash = laser_on - flash;
-    float exp_flash = exposure-flash - laser_on;
-    float loop = 1000/freq-flash-dt-exposure;
-
     PrintCurrentTimeAndMessage("Laser is running!");    
     auto start_time = std::chrono::steady_clock::now();
     while(true) {
@@ -133,19 +90,20 @@ void* Signal(void* arg){
             break;
         }
         
-        digitalWrite(cameraPin, 1); 
-        delayMicroseconds(flash * 1000);
-        digitalWrite(cameraPin, 0); 
-        delayMicroseconds(exp_flash * 1000); 
+        // turn on laser
         digitalWrite(laserPin, 1);
-        delayMicroseconds(dt * 1000);
-      
-        digitalWrite(cameraPin, 1);
-        delayMicroseconds(flash*1000);
+        // turn on camera for the first image
+        digitalWrite(cameraPin, 1); // Rising edge 
+        delay(flash); // g
+        digitalWrite(cameraPin, 0); // Falling edge
+        delay(dt-flash); // wait delt_t for the second signal
+        
+        // turn on camera for the second image
+        digitalWrite(cameraPin, 1); // Rising edge 
+        delay(flash+exposure); // 
         digitalWrite(cameraPin, 0);
-        delayMicroseconds(laser_flash * 1000);
         digitalWrite(laserPin, 0);
-        delayMicroseconds(loop * 1000); // wait until the next pair
+        delay(1000/freq-flash-dt-exposure); // wait until the next pair
     }
     return nullptr;
 }
@@ -192,16 +150,18 @@ void* pivGrab(void* arg){
 
     PrintCurrentTimeAndMessage("Waiting for Camera");
 
+    // sleep(5);    
+
     // Create an instant camera object and open it
     CBaslerUniversalInstantCamera camera( CTlFactory::GetInstance().CreateFirstDevice(info) );
 
 
     camera.Open();
     
-    //Get the camera control object.
-    GenApi::INodeMap& nodemap = camera.GetNodeMap();
-    
     PrintCurrentTimeAndMessage("Camera Opend Successfully");
+
+    // Get the camera control object.
+    // GenApi::INodeMap& nodemap = camera.GetNodeMap();
 
     // hardware trigger
     camera.TriggerMode.SetValue("On");
@@ -216,10 +176,6 @@ void* pivGrab(void* arg){
     // Center the image in the camera's field of view
     camera.CenterX.SetValue(true);
     camera.CenterY.SetValue(true);
-
-    GenApi::CEnumerationPtr(nodemap.GetNode("PixelFormat"))->FromString("Mono12");
-
-    std::cout << "Current Pixel Format: " << GenApi::CEnumerationPtr(nodemap.GetNode("PixelFormat"))->ToString() << std::endl;
 
     camera.ExposureTimeAbs.SetValue(exposure*1000);
 
@@ -359,9 +315,6 @@ int main(int argc, char* argv[])
     int dur = std::stoi(configValues["Duration_in_sec"]);
     int height = std::stoi(configValues["Height"]);
     int width = std::stoi(configValues["Width"]);
-    int laser_on = std::stoi(configValues["laser_on"]);
-    int extension_time = std::stoi(configValues["extension_time_in_sec"]);
-
 
     // Print configuration values in a structured manner
     std::cout << "******** Configuration Settings ********" << std::endl;
@@ -369,17 +322,15 @@ int main(int argc, char* argv[])
     std::cout << "Exposure Time: " << exposure << " ms" << std::endl;
     std::cout << "Frequency: " << freq << " Hz" << std::endl; 
     std::cout << "Duration: " << dur << " seconds" << std::endl;
-    std::cout << "Laser On: " << laser_on << std::endl;
     std::cout << "Image Height: " << height << " pixels" << std::endl;
     std::cout << "Image Width: " << width << " pixels" << std::endl;
-    std::cout << "Extension Time: " << extension_time << " seconds" << std::endl;
     std::cout << "***************************************" << std::endl;
 
     // Create two threads, one for signal, one for grab, make sure they are running at the same time
     pthread_t threadA, threadB;
 
     // Create new threads;
-    int params_signal[6] = {exposure, dur, freq, dt, laser_on. extension_time};
+    int params_signal[4] = {exposure, dur, freq, dt};
     
     int params_piv[6] = {exposure, dur, freq, height, width, dt};
 

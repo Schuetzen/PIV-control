@@ -1,0 +1,22 @@
+****************************************
+Log @ 12:07:14:25
+****************************************
+14:25 Reading config.ini
+******** Configuration Settings ********
+Delta Time (dt): 3 ms
+Exposure Time: 40 ms
+Frequency: 4 Hz
+Duration: 60 seconds
+Laser On: 2
+Image Height: 1000 pixels
+Image Width: 1600 pixels
+Extension Time: 20 seconds
+***************************************
+14:25 Laser start
+14:25 Camera start
+14:25 Laser is running!
+14:25 Pylon Cameara initialized successfully.
+14:25 Waiting for Camera
+14:25 Camera Opend Successfully
+Current Pixel Format: Mono12
+14:25 Data saved in the ../data/2023-12-07_14-25
